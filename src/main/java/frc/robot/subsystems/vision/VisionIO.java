@@ -19,6 +19,13 @@ public interface VisionIO {
         new TargetObservation(Rotation2d.kZero, Rotation2d.kZero);
     public PoseObservation[] poseObservations = new PoseObservation[0];
     public int[] tagIds = new int[0];
+
+    // This is Game Piece Detection Data
+    public boolean hasGamePiece = false;
+    public double gamePieceYaw = 0.0; // Degrees
+    public double gamePiecePitch = 0.0; // Degrees
+    public double gamePieceArea = 0.0; // % of the piece on the screen
+    public double gamePieceTimestamp = 0.0;
   }
 
   /** Represents the angle to a simple target, not used for pose estimation. */

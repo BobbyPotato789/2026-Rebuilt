@@ -199,6 +199,23 @@ public class Drive extends SubsystemBase {
     Logger.recordOutput("SwerveStates/SetpointsOptimized", setpointStates);
   }
 
+  // Returns the current velocit of the robot relative to the field.
+  public ChassisSpeeds getFieldRelativeSpeeds() {
+    // Get raw states from modules (Angle + Velocity)
+    SwerveModuleState[] currentStates = new SwerveModuleState[4];
+
+    for (int i = 0; i < 4; i++) {
+      currentStates[i] = modules[i].getState();
+    }
+
+    // Convert to Robot-relative ChassisSpeeds (Forward/Strafe/Turn)
+    ChassisSpeeds robotRelative = kinematics.toChassisSpeeds(currentStates);
+
+    // Convert to Field-Relative using the Gyro
+    // This Rotates the vector so X aligns wiith the field's X axis
+    return ChassisSpeeds.fromFieldRelativeSpeeds(robotRelative, getRotation());
+  }
+
   /** Runs the drive in a straight line with the specified drive output. */
   public void runCharacterization(double output) {
     for (int i = 0; i < 4; i++) {

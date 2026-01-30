@@ -7,6 +7,7 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.RobotBase;
 
 /**
@@ -27,5 +28,49 @@ public final class Constants {
 
     /** Replaying from a log file. */
     REPLAY
+  }
+
+  public static final class DriveConstants {
+    public static final double kMaxSpeedMetersPerSecond = 4.8;
+  }
+
+  public static final class ShooterConstants {
+    public static final double kFixedPitchDegrees = 0;
+
+    // --- Configuration Flags ---
+    public static final boolean kHasHood = true;
+    public static final boolean kIsDoubleFlywheel = true; // Set TRUE for Top/Bottom shooter
+    public static final boolean kHasDualHoods = true;
+
+    // --- Device IDs ---
+    // Primary Flywheel (e.g. Bottom Roller) - 2 Motors
+    public static final int kPrimaryLeaderID = 20;
+    public static final int kPrimaryFollowerID = 21;
+
+    // Secondary Flywheel (e.g. Top Roller) - 2 Motors
+    public static final int kSecondaryLeaderID = 24;
+    public static final int kSecondaryFollowerID = 25;
+
+    // Hoods
+    public static final int kPrimaryHoodID = 22;
+    public static final int kSecondaryHoodID = 23;
+
+    // --- Flywheel Constants (Bang-Bang) ---
+    public static final double kFlywheelToleranceRPM = 50.0;
+    public static final double kMaxRPM = 5700.0;
+    public static final double kBangBangVoltage = 12.0;
+
+    // --- Hood Constants ---
+    public static final double kHoodGearRatio = 100.0;
+    public static final double kHoodMinAngleRad = Units.degreesToRadians(20);
+    public static final double kHoodMaxAngleRad = Units.degreesToRadians(60);
+
+    // Hood PID
+    public static final double kHoodkP = 4.0;
+    public static final double kHoodkI = 0.0;
+    public static final double kHoodkD = 0.0;
+
+    public static final double kHoodMaxVel = Units.degreesToRadians(120);
+    public static final double kHoodMaxAccel = Units.degreesToRadians(240);
   }
 }
