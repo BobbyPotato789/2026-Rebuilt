@@ -49,6 +49,39 @@ public class Vision extends SubsystemBase {
     }
   }
 
+  // This returns true if the specified camera sees a game piece (yellow ball)
+  public boolean hasGamePiece(int cameraIndex) {
+    if (cameraIndex < inputs.length) {
+      return inputs[cameraIndex].hasGamePiece;
+    }
+    return false;
+  }
+
+  // Returns the Yaw Angle (degrees) to the Game Piece (It's a ball so it might work a bit weird)
+  public double getGamePieceYaw(int cameraIndex) {
+    if (cameraIndex < inputs.length) {
+      return inputs[cameraIndex].gamePieceYaw;
+    }
+    return 0.0;
+  }
+
+  // Returns the Pitch angle (degrees) to the Game Piece
+  // This is useful for determining the distance to the game piece
+  public double getGamePiecePitch(int cameraIndex) {
+    if (cameraIndex < inputs.length) {
+      return inputs[cameraIndex].gamePiecePitch;
+    }
+    return 0.0;
+  }
+
+  // Returns the area (%) of Game Piece
+  public double getGamePieceArea(int cameraIndex) {
+    if (cameraIndex < inputs.length) {
+      return inputs[cameraIndex].gamePieceArea;
+    }
+    return 0.0;
+  }
+
   /**
    * Returns the X angle to the best target, which can be used for simple servoing with vision.
    *
