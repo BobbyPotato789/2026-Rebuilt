@@ -3,16 +3,43 @@ package frc.robot.util;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 // import frc.robot.Constants.ShooterConstants;
 
 public class ShootingPhysics {
 
+  // Key: Distance (m), Vlaue: Time of Flight (s)
+  private static final InterpolatingDoubleTreeMap timeOfFlightMap =
+      new InterpolatingDoubleTreeMap();
+
+  // Key: Distance (m), Value: RPM
+  private static final InterpolatingDoubleTreeMap rpmMap = new InterpolatingDoubleTreeMap();
+
+  // Key: Distance (m), Value: Hood Angle (Degrees)
+  private static final InterpolatingDoubleTreeMap hoodMap = new InterpolatingDoubleTreeMap();
+
+  static {
+    // The More the data you put the more accurate it's going to be
+    // But don't put too much
+
+    // Time of flight (this can be tuned by recording in slo-mo)
+    timeOfFlightMap.put(null, null);
+
+    // RPM
+    rpmMap.put(null, null);
+
+    // Hood Angle
+    hoodMap.put(null, null);
+  }
+
   public record ShootSolution(
-      Rotation2d azimuth, // Field-Relative Robot/Turret Angle
+      Rotation2d robotHeading, // Field-Relative Robot/Turret Angle
       double flywheelRPM, // Adjusted RPM
-      double hoodAngleRad) {} // Ideal Hood Angle
+      double hoodAngleRad, // Hood POsition
+      double effectiveDist // This is for debugging
+      ) {}
 
   /**
    * Calculates the shooting vector based on robot motion. Implements "V_ball/robot = V_ball/ground
@@ -25,50 +52,49 @@ public class ShootingPhysics {
   public static ShootSolution calculateShot(
       Pose2d currentPose, ChassisSpeeds fieldRelativeSpeeds, Translation2d targetLocation) {
 
-    // 1. Latency Compensation
-    // This is to Project the robot's position forward by the tuned latency factor
-    double latencySec = 0.15; //  Tune this: Camera + Network + Motor Lag
-    Translation2d robotVelVec =
-        new Translation2d(
-            fieldRelativeSpeeds.vxMetersPerSecond, fieldRelativeSpeeds.vyMetersPerSecond);
+    // 1. Get the initial distance
+    double currentDistance = targetLocation.getDistance(currentPose.getTranslation());
 
-    Translation2d futurePos = currentPose.getTranslation().plus(robotVelVec.times(latencySec));
+    // 2. This is going to run the time of fight stuff multiple times for accuracy
+    double timeOffFlight = 0.0;
+    Translation2d virtualGoalLocation = targetLocation;
+    double effectiveDistance = currentDistance;
 
-    // 2. Get Target Vector
-    Translation2d targetVec = targetLocation.minus(futurePos);
-    double dist = targetVec.getNorm();
+    // Run 5 passes (this can be changed depending if we want more accuracy)
+    for (int i = 0; i < 5; i++) {
+      // Use the look up table for the current guess distance
+      timeOffFlight = timeOfFlightMap.get(effectiveDistance);
 
-    // 3. Calculate Ideal Shot (Stationary)
-    // We use a lookup table to get the Ideal HORIZONTAL velocity for this distance.
-    // NOTE: If your table assumes total RPM, multiply by cos(pitch) here.
-    double idealHoodAngle = getIdealHoodAngle(dist);
-    double idealHorizontalSpeed = getStationaryHorizontalSpeed(dist);
+      // Calculate the virtual goal position
+      // This matters because if we are moving 4m/s away from the goal, and the shot takes 1 second
+      // the goal moves 4 meters further away relative to use during the shot
+      double virtualGoalX =
+          targetLocation.getX() - (fieldRelativeSpeeds.vxMetersPerSecond * timeOffFlight);
+      double virtualGoalY =
+          targetLocation.getY() - (fieldRelativeSpeeds.vyMetersPerSecond * timeOffFlight);
 
-    // 4. Vector Subtraction
-    // V_shot = V_target - V_robot
-    // Scale the normalized target vector by the ideal speed to get V_target
-    Translation2d idealGroundVel = targetVec.div(dist).times(idealHorizontalSpeed);
+      virtualGoalLocation = new Translation2d(virtualGoalX, virtualGoalY);
 
-    // The subtraction:
-    Translation2d shootVec = idealGroundVel.minus(robotVelVec);
+      // Update the distance for the next loop
+      effectiveDistance = virtualGoalLocation.getDistance(currentPose.getTranslation());
+    }
 
-    // 5. Extract Outputs
-    Rotation2d fieldAzimuth = shootVec.getAngle();
-    double requiredHorizontalSpeed = shootVec.getNorm();
+    // I deleted the past physics that used latency because it took up too much space
 
-    // 6. Convert to Total Speed (If fixed hood)
-    // V_total = V_horizontal / cos(theta)
-    // If variable hood, you would solve for pitch here instead.
-    // double releaseAngleRad = Math.toRadians(ShooterConstants.kFixedPitchDegrees);
-    double requiredTotalVelocity = requiredHorizontalSpeed / Math.cos(idealHoodAngle);
+    // This handles leading the shot & rotation
+    Rotation2d targetHeading = virtualGoalLocation.minus(currentPose.getTranslation()).getAngle();
 
-    // Convert m/s to RPM (You need to tune this conversion factor)
-    // RPM = (Velocity / (2 * PI * radius)) * 60 * GearRatio
-    double calculatedRPM = requiredTotalVelocity * 250.0; // Placeholder conversion
+    // RPM & Hood: This part tells the shooter to shoot harder/higher
+    // if we are moving away
+    double targetRPM = rpmMap.get(effectiveDistance);
+    double targetHoodDeg = hoodMap.get(effectiveDistance);
 
-    return new ShootSolution(fieldAzimuth, calculatedRPM, idealHoodAngle);
+    return new ShootSolution(
+        targetHeading, targetRPM, Units.degreesToRadians(targetHoodDeg), effectiveDistance);
   }
 
+  // ***DISCLAIMER**
+  // THESE ARE OLD CODE; it was used to calculate SOTF using Vectors * latency
   // Mock Lookup Table: Distance (m) -> Horizontal Velocity (m/s)
   private static double getStationaryHorizontalSpeed(double distance) {
     // Example: 6 m/s base  + linear increase

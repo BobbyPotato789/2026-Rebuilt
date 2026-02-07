@@ -11,6 +11,9 @@ import frc.robot.subsystems.turret.Turret;
 import frc.robot.util.ShootingPhysics;
 import java.util.function.Supplier;
 
+// ***DISCLAIMER***
+// This code has not been updated to recent changes
+// This is due to the rather slim possiblity of us using a turret
 public class AimTurretSOTF extends Command {
   private final Turret turret;
   private final Drive drive;
@@ -36,7 +39,7 @@ public class AimTurretSOTF extends Command {
 
     // 3. Convert to Turret-Relative Angle
     // The solution gives a Field-Relative angle. We must subtract robot heading.
-    Rotation2d turretSetpoint = solution.azimuth().minus(robotPose.getRotation());
+    Rotation2d turretSetpoint = solution.robotHeading().minus(robotPose.getRotation());
 
     // 4. Set Outputs
     turret.setTargetPosition(turretSetpoint.getRadians());

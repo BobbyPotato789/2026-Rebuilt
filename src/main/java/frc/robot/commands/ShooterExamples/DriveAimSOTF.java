@@ -80,7 +80,7 @@ public class DriveAimSOTF extends Command {
     // We want the Robot's Heading (Odometry) to match the Shot Azimuth
     double rotationOutput =
         turnController.calculate(
-            robotPose.getRotation().getRadians(), solution.azimuth().getRadians());
+            robotPose.getRotation().getRadians(), solution.robotHeading().getRadians());
 
     // 4. Drive
     // Pass Driver X/Y, but override Rotation with SOTF result
